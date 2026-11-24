@@ -1,0 +1,62 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>WayReel: prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--a1:#FFC15A;--a2:#F07A1F;--tx:#F3EFFF;--mu:#B9B4E0;--gl:rgba(255,255,255,.08);--bd:rgba(255,255,255,.22);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0;min-height:100%}
+body{background:radial-gradient(circle at 100% 0%,rgba(255,150,40,.45),transparent 40%),radial-gradient(circle at 0% 100%,rgba(139,92,246,.4),transparent 50%),linear-gradient(135deg,#0A0F2E,#1A1654 60%,#2B1B6B) fixed;color:var(--tx);font:16px/1.4 Inter,system-ui,sans-serif}
+main{max-width:460px;margin:0 auto;padding:24px 20px 48px}
+.serif,h1,h3{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-weight:400}
+h1{font-size:44px;line-height:1.05;margin:8px 0 16px}h3{font-size:26px;margin:0 0 4px;color:var(--a1)}
+.eb{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--a1);font-weight:600;margin:0}
+.glass{background:var(--gl);border:1px solid var(--bd);border-radius:20px;padding:16px;margin-top:14px}
+input,textarea{width:100%;box-sizing:border-box;background:rgba(10,15,46,.6);border:1px solid var(--bd);border-radius:14px;color:var(--tx);padding:14px;font:inherit;margin-top:10px}
+textarea{min-height:110px;resize:vertical}
+button{font:600 16px Inter,system-ui,sans-serif;border:0;border-radius:999px;padding:14px 22px;cursor:pointer;width:100%;margin-top:12px}
+.go{background:linear-gradient(90deg,var(--a1),var(--a2));color:#2A1204}
+.ghost{background:transparent;color:var(--a1);border:1px solid var(--bd)}
+.note{font-size:13px;color:var(--mu);margin-top:16px}#msg{color:var(--a1);font-size:14px;margin:10px 0 0}
+.hide{display:none}
+.item{display:flex;gap:12px;margin-top:12px;align-items:center}.item small{color:var(--mu)}
+.n{flex:none;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--a1),var(--a2));color:#2A1204;display:flex;align-items:center;justify-content:center;font-weight:600}
+.rt{stroke-dasharray:1;animation:dr 2.2s ease forwards}@keyframes dr{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+</style></head><body><main>
+<section id="s1"><p class="eb">WayReel · Prototype</p><h1>Paste a Reel. Get a trip.</h1>
+<div class="glass"><input id="link" placeholder="Reel link (instagram.com/reel/…)" inputmode="url"><textarea id="cap" placeholder="Paste the caption or on-screen text"></textarea>
+<button class="go" id="build">Build my trip</button><button class="ghost" id="sample">Try a sample Reel</button><p id="msg"></p></div>
+<p class="note">Prototype: it reads the text you paste and matches a small list of Lisbon places. Reading the video’s audio and on-screen text is the next step.</p></section>
+<section id="s2" class="hide"><p class="eb">Your trip</p><h1 id="t">Your route</h1>
+<div class="glass" style="padding:8px"><svg id="map" viewBox="0 0 360 400" role="img" aria-label="Map with numbered stops joined by a route line" style="width:100%;display:block"></svg></div>
+<div id="days"></div><button class="ghost" id="back">← Try another Reel</button></section>
+</main><script>
+const P=[
+{n:'Pastéis de Belém',k:['pastéis de belém','pasteis de belem','belém','belem'],a:0,t:'09:00',x:40,y:300,d:'Custard tarts. Go early.'},
+{n:'LX Factory',k:['lx factory'],a:0,t:'11:30',x:105,y:282,d:'Shops, cafes, street art.'},
+{n:'Time Out Market',k:['time out market'],a:1,t:'13:00',x:175,y:305,d:'Lunch under one roof.'},
+{n:'A Brasileira',k:['a brasileira','brasileira'],a:1,t:'16:00',x:215,y:245,d:'Coffee in Chiado.'},
+{n:'Castelo de São Jorge',k:['castelo de são jorge','castelo de sao jorge','são jorge','sao jorge'],a:2,t:'10:00',x:265,y:185,d:'City views from the walls.'},
+{n:'Miradouro da Graça',k:['miradouro da graça','miradouro da graca','graça','graca'],a:2,t:'17:30',x:300,y:115,d:'Sunset viewpoint.'}];
+const AR=['West','Centre','East'];
+const SAMPLE='POV: 48 hours in Lisbon 🇵🇹 Pastéis de Belém at 9am, LX Factory for shopping, Time Out Market for lunch, coffee at A Brasileira, sunset at Miradouro da Graça and Castelo de São Jorge #lisbon #traveltok';
+const $=i=>document.getElementById(i);
+function find(s){s=s.toLowerCase();return P.filter(p=>p.k.some(k=>s.includes(k))).sort((a,b)=>a.a-b.a||a.t.localeCompare(b.t))}
+$('sample').onclick=()=>{$('link').value='https://www.instagram.com/reel/sample';$('cap').value=SAMPLE;$('msg').textContent=''};
+$('back').onclick=()=>{$('s2').classList.add('hide');$('s1').classList.remove('hide')};
+$('build').onclick=()=>{
+ const txt=$('cap').value;
+ if(!txt.trim()){$('msg').textContent='Paste the caption too, so I can read the places. Or try the sample Reel.';return}
+ const r=find(txt);
+ if(!r.length){$('msg').textContent='No places found in this text yet. Try the sample Reel.';return}
+ render(r);$('s1').classList.add('hide');$('s2').classList.remove('hide');window.scrollTo(0,0)};
+function render(r){
+ $('t').textContent=r.length+' places, in order';
+ let d='M'+r[0].x+' '+r[0].y;
+ for(let i=1;i<r.length;i++){const p=r[i-1],q=r[i],m=(p.x+q.x)/2;d+=' C'+m+' '+p.y+' '+m+' '+q.y+' '+q.x+' '+q.y}
+ let s='<path d="M0 345C90 320 200 372 360 330V400H0Z" fill="rgba(124,92,255,.28)"/>'+
+ (r.length>1?'<path class="rt" pathLength="1" d="'+d+'" fill="none" stroke="#FFC15A" stroke-width="4" stroke-linecap="round"/>':'');
+ r.forEach((p,i)=>{const e=p.x>220;s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="13" fill="#FFC15A"/><text x="'+p.x+'" y="'+(p.y+5)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#2A1204">'+(i+1)+'</text><text x="'+(e?p.x-19:p.x+19)+'" y="'+(p.y+4)+'" text-anchor="'+(e?'end':'start')+'" font-size="11" fill="#F3EFFF">'+p.n+'</text>'});
+ $('map').innerHTML=s;
+ let h='',n=0,day=0;
+ [0,1,2].forEach(a=>{const g=r.filter(p=>p.a===a);if(!g.length)return;day++;
+  h+='<div class="glass"><h3>Day '+day+' · '+AR[a]+'</h3>'+g.map(p=>{n++;return '<div class="item"><span class="n">'+n+'</span><div><b>'+p.n+'</b><br><small>'+p.t+' · '+p.d+'</small></div></div>'}).join('')+'</div>'});
+ $('days').innerHTML=h}
+</script></body></html>
