@@ -1,0 +1,114 @@
+{
+  "entities": {
+    "Trip": {
+      "title": "Trip",
+      "description": "A user-saved multi-Reel travel trip containing Reel input sources, extracted and geocoded places, and day-by-day itinerary configuration.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "title": {
+          "type": "string",
+          "description": "Trip title derived from destinations or user-edited."
+        },
+        "daysCount": {
+          "type": "integer",
+          "description": "Number of days in the itinerary (1 to 10)."
+        },
+        "startTimeMinutes": {
+          "type": "integer",
+          "description": "Daily start time in minutes from midnight (0 to 1439)."
+        },
+        "reelSources": {
+          "type": "array",
+          "description": "Up to 10 Instagram Reel links, captions, or media sources included in this trip."
+        },
+        "places": {
+          "type": "array",
+          "description": "Extracted and geocoded places assigned to itinerary days."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on creation and update."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "daysCount",
+        "startTimeMinutes",
+        "reelSources",
+        "places",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User accuracy feedback submitted after reviewing a generated Reel itinerary.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "tripId": {
+          "type": "string",
+          "description": "Associated trip document ID."
+        },
+        "rating": {
+          "type": "string",
+          "enum": ["yes", "mostly", "no"],
+          "description": "Whether the itinerary matched what the Reel showed."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Optional user comment on extraction or routing accuracy."
+        },
+        "reelCount": {
+          "type": "integer",
+          "description": "Number of Reels in the trip when feedback was given."
+        },
+        "placeCount": {
+          "type": "integer",
+          "description": "Number of places in the trip when feedback was given."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp() on creation."
+        }
+      },
+      "required": [
+        "userId",
+        "tripId",
+        "rating",
+        "reelCount",
+        "placeCount",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/trips/{tripId}": {
+      "schema": {
+        "$ref": "#/entities/Trip"
+      },
+      "description": "User-owned saved trips and day-by-day itineraries."
+    },
+    "/users/{userId}/feedback/{feedbackId}": {
+      "schema": {
+        "$ref": "#/entities/Feedback"
+      },
+      "description": "User-submitted accuracy feedback logs for real user evidence."
+    }
+  }
+}

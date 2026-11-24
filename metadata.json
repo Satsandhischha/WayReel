@@ -1,0 +1,6 @@
+{
+  "name": "WayReel",
+  "description": "Turn Instagram Reel links, captions, or screen recordings into mapped places and day-by-day travel itineraries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTrip(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.title is string &&
+             data.title.size() >= 1 &&
+             data.title.size() <= 120 &&
+             data.daysCount is int &&
+             data.daysCount >= 1 &&
+             data.daysCount <= 10 &&
+             data.startTimeMinutes is int &&
+             data.startTimeMinutes >= 0 &&
+             data.startTimeMinutes <= 1439 &&
+             data.reelSources is list &&
+             data.reelSources.size() <= 10 &&
+             (data.reelSources.size() == 0 || data.reelSources[0] is map) &&
+             data.places is list &&
+             data.places.size() <= 80 &&
+             (data.places.size() == 0 || data.places[0] is map) &&
+             data.createdAt is timestamp &&
+             data.createdAt <= request.time &&
+             data.updatedAt is timestamp &&
+             data.updatedAt <= request.time;
+    }
+
+    function isValidFeedback(data, userId) {
+      return data.userId is string &&
+             data.userId == userId &&
+             data.tripId is string &&
+             data.tripId.size() >= 1 &&
+             data.tripId.size() <= 128 &&
+             data.rating in ['yes', 'mostly', 'no'] &&
+             (!('comment' in data) || (data.comment is string && data.comment.size() <= 1000)) &&
+             data.reelCount is int &&
+             data.reelCount >= 0 &&
+             data.reelCount <= 10 &&
+             data.placeCount is int &&
+             data.placeCount >= 0 &&
+             data.placeCount <= 200 &&
+             data.createdAt is timestamp &&
+             data.createdAt <= request.time;
+    }
+
+    match /users/{userId}/trips/{tripId} {
+      allow get: if isOwner(userId) && isValidId(tripId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(tripId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'title', 'daysCount', 'startTimeMinutes',
+                         'reelSources', 'places', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'title', 'daysCount', 'startTimeMinutes',
+                         'reelSources', 'places', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidTrip(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(tripId) &&
+                       isValidTrip(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'title', 'daysCount', 'startTimeMinutes',
+                         'reelSources', 'places', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(tripId);
+    }
+
+    match /users/{userId}/feedback/{feedbackId} {
+      allow get: if isOwner(userId) && isValidId(feedbackId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(feedbackId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'tripId', 'rating', 'reelCount', 'placeCount', 'createdAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'tripId', 'rating', 'comment', 'reelCount', 'placeCount', 'createdAt'
+                       ]) &&
+                       isValidFeedback(incoming(), userId);
+
+      allow update: if false;
+      allow delete: if isOwner(userId) && isValidId(feedbackId);
+    }
+  }
+}
